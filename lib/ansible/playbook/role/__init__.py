@@ -201,6 +201,18 @@ class Role(Base, Become, Conditional, Taggable):
             raise AnsibleParserError("The default/main.yml file for role '%s' must contain a dictionary of variables" % self._role_name)
 
     def _load_role_yaml(self, subdir):
+        return self._load_role_yaml_from_file(subdir) or self._load_role_yaml_from_directory(subdir)
+
+    def _load_role_yaml_from_file(self, subdir):
+        file_path = os.path.join(self._role_path, subdir)
+        valid_exts = [ "", ".yml", ".yaml", ".json" ]
+        main_files = [ "%s%s" % (file_path, ext) for ext in valid_exts ]
+        for main_file in main_files:
+            if self._loader.path_exists(main_file) and not self._loader.is_directory(main_file):
+                return self._loader.load_from_file(main_file)
+        return None
+
+    def _load_role_yaml_from_directory(self, subdir):
         file_path = os.path.join(self._role_path, subdir)
         if self._loader.path_exists(file_path) and self._loader.is_directory(file_path):
             main_file = self._resolve_main(file_path)
@@ -421,4 +433,3 @@ class Role(Base, Become, Conditional, Taggable):
             parent.set_loader(loader)
         for dep in self.get_direct_dependencies():
             dep.set_loader(loader)
-
